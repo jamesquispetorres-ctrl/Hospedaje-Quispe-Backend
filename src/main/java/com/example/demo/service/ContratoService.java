@@ -140,6 +140,20 @@ public class ContratoService {
         return toResponseDTO(actualizado);
     }
 
+    @Transactional
+    public void deleteContrato(Long id) {
+        Contrato contrato = contratoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Contrato no encontrado con ID: " + id));
+
+        if (contrato.getHabitacion() != null && contrato.getHabitacion().getEstado() == EstadoHabitacion.OCUPADA) {
+            Habitacion habitacion = contrato.getHabitacion();
+            habitacion.setEstado(EstadoHabitacion.DISPONIBLE);
+            habitacionRepository.save(habitacion);
+        }
+
+        contratoRepository.delete(contrato);
+    }
+
     public ContratoDTO.Response toResponseDTO(Contrato entity) {
         return ContratoDTO.Response.builder()
                 .id(entity.getId())

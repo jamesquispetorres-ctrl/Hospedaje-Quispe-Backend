@@ -41,4 +41,10 @@ public class ContratoController {
     public ResponseEntity<ContratoDTO.Response> finalizar(@PathVariable Long id) {
         return ResponseEntity.ok(contratoService.finalizarContrato(id));
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        contratoService.deleteContrato(id);
+        return ResponseEntity.noContent().build();
+    }
 }
