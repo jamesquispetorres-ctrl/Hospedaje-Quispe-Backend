@@ -3,8 +3,15 @@ package com.example.demo.service;
 import com.example.demo.dto.HuespedDTO;
 import com.example.demo.exception.BadRequestException;
 import com.example.demo.exception.ResourceNotFoundException;
+import com.example.demo.model.entity.Contrato;
+import com.example.demo.model.entity.Habitacion;
 import com.example.demo.model.entity.Huesped;
+import com.example.demo.model.entity.Pago;
+import com.example.demo.model.enums.EstadoHabitacion;
+import com.example.demo.repository.ContratoRepository;
+import com.example.demo.repository.HabitacionRepository;
 import com.example.demo.repository.HuespedRepository;
+import com.example.demo.repository.PagoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +24,9 @@ import java.util.stream.Collectors;
 public class HuespedService {
 
     private final HuespedRepository huespedRepository;
+    private final ContratoRepository contratoRepository;
+    private final PagoRepository pagoRepository;
+    private final HabitacionRepository habitacionRepository;
 
     @Transactional(readOnly = true)
     public List<HuespedDTO> getAllHuespedes() {
@@ -84,7 +94,28 @@ public class HuespedService {
     public void deleteHuesped(Long id) {
         Huesped huesped = huespedRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Huésped no encontrado con ID: " + id));
-        huesped.setActivo(false); // Eliminación lógica
+
+        // 1. Eliminar contratos y pagos vinculados a este huésped
+        List<Contrato> contratos = contratoRepository.findByHuespedId(id);
+        if (contratos != null && !contratos.isEmpty()) {
+            for (Contrato c : contratos) {
+                // Liberar la habitación si estaba ocupada por el contrato
+                if (c.getHabitacion() != null && c.getHabitacion().getEstado() == EstadoHabitacion.OCUPADA) {
+                    Habitacion hab = c.getHabitacion();
+                    hab.setEstado(EstadoHabitacion.DISPONIBLE);
+                    habitacionRepository.save(hab);
+                }
+                // Eliminar pagos del contrato
+                List<Pago> pagos = pagoRepository.findByContratoIdOrderByFechaVencimientoDesc(c.getId());
+                if (pagos != null && !pagos.isEmpty()) {
+                    pagoRepository.deleteAll(pagos);
+                }
+                contratoRepository.delete(c);
+            }
+        }
+
+        // 2. Dar de baja lógica al huésped
+        huesped.setActivo(false);
         huespedRepository.save(huesped);
     }
 

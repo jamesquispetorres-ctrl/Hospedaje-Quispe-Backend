@@ -145,12 +145,20 @@ public class ContratoService {
         Contrato contrato = contratoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Contrato no encontrado con ID: " + id));
 
+        // 1. Eliminar primero todos los pagos asociados a este contrato para evitar violar FK ("pagos", "contrato_id")
+        List<Pago> pagos = pagoRepository.findByContratoIdOrderByFechaVencimientoDesc(id);
+        if (pagos != null && !pagos.isEmpty()) {
+            pagoRepository.deleteAll(pagos);
+        }
+
+        // 2. Liberar la habitación si el contrato estaba activo
         if (contrato.getHabitacion() != null && contrato.getHabitacion().getEstado() == EstadoHabitacion.OCUPADA) {
             Habitacion habitacion = contrato.getHabitacion();
             habitacion.setEstado(EstadoHabitacion.DISPONIBLE);
             habitacionRepository.save(habitacion);
         }
 
+        // 3. Eliminar el contrato
         contratoRepository.delete(contrato);
     }
 

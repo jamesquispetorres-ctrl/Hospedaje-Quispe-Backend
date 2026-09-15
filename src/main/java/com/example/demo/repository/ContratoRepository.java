@@ -16,6 +16,8 @@ public interface ContratoRepository extends JpaRepository<Contrato, Long> {
 
     List<Contrato> findByHuespedId(Long huespedId);
 
+    List<Contrato> findByHabitacionId(Long habitacionId);
+
     Optional<Contrato> findByHabitacionIdAndEstado(Long habitacionId, EstadoContrato estado);
 
     boolean existsByHabitacionIdAndEstado(Long habitacionId, EstadoContrato estado);

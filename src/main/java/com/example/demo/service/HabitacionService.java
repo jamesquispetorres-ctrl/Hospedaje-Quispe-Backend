@@ -4,8 +4,12 @@ import com.example.demo.dto.HabitacionDTO;
 import com.example.demo.exception.BadRequestException;
 import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.model.entity.Habitacion;
+import com.example.demo.model.entity.Contrato;
+import com.example.demo.model.entity.Pago;
 import com.example.demo.model.enums.EstadoHabitacion;
+import com.example.demo.repository.ContratoRepository;
 import com.example.demo.repository.HabitacionRepository;
+import com.example.demo.repository.PagoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +23,8 @@ import java.util.stream.Collectors;
 public class HabitacionService {
 
     private final HabitacionRepository habitacionRepository;
+    private final ContratoRepository contratoRepository;
+    private final PagoRepository pagoRepository;
 
     @Transactional(readOnly = true)
     public List<HabitacionDTO> getAllHabitaciones() {
@@ -101,10 +107,23 @@ public class HabitacionService {
 
     @Transactional
     public void deleteHabitacion(Long id) {
-        if (!habitacionRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Habitación no encontrada con ID: " + id);
+        Habitacion habitacion = habitacionRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Habitación no encontrada con ID: " + id));
+
+        // 1. Eliminar primero los contratos y pagos asociados a esta habitación
+        List<Contrato> contratos = contratoRepository.findByHabitacionId(id);
+        if (contratos != null && !contratos.isEmpty()) {
+            for (Contrato c : contratos) {
+                List<Pago> pagos = pagoRepository.findByContratoIdOrderByFechaVencimientoDesc(c.getId());
+                if (pagos != null && !pagos.isEmpty()) {
+                    pagoRepository.deleteAll(pagos);
+                }
+                contratoRepository.delete(c);
+            }
         }
-        habitacionRepository.deleteById(id);
+
+        // 2. Eliminar la habitación
+        habitacionRepository.delete(habitacion);
     }
 
     public HabitacionDTO toDTO(Habitacion entity) {
