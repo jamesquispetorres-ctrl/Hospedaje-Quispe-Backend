@@ -16,8 +16,8 @@ public class HuespedDTO {
 
     private Long id;
 
-    @NotBlank(message = "El DNI es obligatorio")
-    @Size(min = 8, max = 12, message = "El DNI debe tener entre 8 y 12 caracteres")
+    @NotBlank(message = "El documento de identidad es obligatorio")
+    @Size(min = 5, max = 20, message = "El documento debe tener entre 5 y 20 caracteres")
     private String dni;
 
     @NotBlank(message = "Los nombres son obligatorios")
@@ -27,7 +27,6 @@ public class HuespedDTO {
     private String apellidos;
 
     @NotBlank(message = "El teléfono es obligatorio")
-    @Pattern(regexp = "^[0-9+ ]{9,15}$", message = "El formato de teléfono no es válido")
     private String telefono;
 
     private String email;

@@ -114,9 +114,8 @@ public class HuespedService {
             }
         }
 
-        // 2. Dar de baja lógica al huésped
-        huesped.setActivo(false);
-        huespedRepository.save(huesped);
+        // 2. Eliminar el registro de huésped del sistema
+        huespedRepository.delete(huesped);
     }
 
     @Transactional(readOnly = true)
